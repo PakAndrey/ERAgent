@@ -1,0 +1,6 @@
+altair==5.5.0
+fredapi==0.5.2
+pandas==2.3.1
+pandasai==2.3.2
+pandasai_litellm==0.0.1
+streamlit==1.47.1
