@@ -97,7 +97,7 @@ with st.sidebar:
             st.info("Select at least one series to display.")
 
         # Save full combined data (not just filtered)
-        df_all.to_csv('combined_fred_data.csv', index=True)
+        # df_all.to_csv('combined_fred_data.csv', index=True)
 
 # # --- Session State ---
 # if "selected_series" not in st.session_state:
@@ -194,8 +194,9 @@ pai.config.set({
     "llm": llm
 })
 
-if os.path.exists('combined_fred_data.csv'):
-    df = pai.read_csv('combined_fred_data.csv')
+# if os.path.exists('combined_fred_data.csv'):
+#     df = pai.read_csv('combined_fred_data.csv')
+df = df_all
 
 # Streamlit UI
 st.title("Economic Research Assistant")
