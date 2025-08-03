@@ -44,11 +44,13 @@ with st.sidebar:
     # Selected Series
     if st.session_state.selected_series:
         st.markdown("---")
-        st.subheader("🗂️ Selected")
-        for sid, title in st.session_state.selected_series.items():
+        st.subheader("🗂️ Selected Series")
+
+        # Convert to list to avoid RuntimeError during iteration + deletion
+        for sid, title in list(st.session_state.selected_series.items()):
             col1, col2 = st.columns([5, 1])
             with col1:
-                st.caption(title)
+                st.caption(f"{title} ({sid})")
             with col2:
                 if st.button("❌", key=f"remove_{sid}"):
                     del st.session_state.selected_series[sid]
@@ -196,7 +198,7 @@ pai.config.set({
 
 # if os.path.exists('combined_fred_data.csv'):
 #     df = pai.read_csv('combined_fred_data.csv')
-df = df_all
+# df = df_all
 
 # Streamlit UI
 st.title("Economic Research Assistant")
@@ -232,11 +234,16 @@ def handle_response(response):
         st.warning("Unrecognized response format.")
 
 # Process on submit
-if submitted and prompt and df is not None:
-    try:
-        # df = pai.SmartDataframe(df_all)
-        response = df.chat(prompt)
-        handle_response(response)
-    
-    except Exception as e:
-        st.error(f"Exception: {e}")
+if submitted and prompt:
+    if 'df_all' not in locals():
+        st.error("No data available. Please select some time series first.")
+        st.stop()
+    else:
+        # st.info("Processing your request...")
+        try:
+            df = pai.SmartDataframe(df_all)
+            response = df.chat(prompt)
+            handle_response(response)
+        
+        except Exception as e:
+            st.error(f"Exception: {e}")
