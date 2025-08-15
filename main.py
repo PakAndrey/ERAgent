@@ -76,27 +76,38 @@ with st.sidebar:
         df_all.interpolate(method='time', inplace=True)
         df_all.sort_index(inplace=True)
 
-        # Show selection box to choose which series to display
-        default_series = list(st.session_state.selected_series)[-1:]  # Latest added as default
-        options = list(st.session_state.selected_series.values())
-        series_keys = list(st.session_state.selected_series.keys())
 
-        label_map = {v: k for k, v in st.session_state.selected_series.items()}  # Reverse lookup
+# Combine time series
+if st.session_state.selected_series:
+    # --- Interactive dashboard ---
+    selected_sids = list(st.session_state.selected_series.keys())
+    df_display = df_all[selected_sids]
 
-        selected_labels = st.multiselect(
-            "Choose series to display:",
-            options=options,
-            default=[options[-1]] if options else []
-        )
+    # Transform to long format
+    df_long = df_display.reset_index().melt(
+        id_vars="DATE",
+        value_vars=selected_sids,
+        var_name="Series",
+        value_name="Value"
+    )
 
-        selected_sids = [label_map[label] for label in selected_labels]
+    # Dynamic axis scaling
+    y_min = df_long["Value"].min()
+    y_max = df_long["Value"].max()
+    x_min = df_long["DATE"].min()
+    x_max = df_long["DATE"].max()
 
-        if selected_sids:
-            df_display = df_all[selected_sids]
-            # st.dataframe(df_display)
-            st.line_chart(df_display, use_container_width=True)
-        else:
-            st.info("Select at least one series to display.")
+    # Altair line chart
+    chart = alt.Chart(df_long).mark_line().encode(
+        x=alt.X("DATE", type="temporal", scale=alt.Scale(domain=(x_min, x_max))),
+        y=alt.Y("Value", scale=alt.Scale(domain=(y_min, y_max))),
+        color="Series"
+    ).properties(
+        width=800,
+        height=400
+    ).interactive()
+
+    st.altair_chart(chart, use_container_width=True)
 
         # Save full combined data (not just filtered)
         # df_all.to_csv('combined_fred_data.csv', index=True)
@@ -189,20 +200,28 @@ with st.sidebar:
 
 
 
-# For OpenAI models
-llm = LiteLLM(model="gemini/gemini-2.5-flash-lite")
-
-pai.config.set({
-    "llm": llm
-})
-
 # if os.path.exists('combined_fred_data.csv'):
 #     df = pai.read_csv('combined_fred_data.csv')
 # df = df_all
 
 # Streamlit UI
 st.title("Economic Research Assistant")
+# List of available Gemini models
+gemini_models = [
+    "gemini/gemini-2.5-pro",
+    "gemini/gemini-2.5-flash"]
 
+# Streamlit dropdown for selecting a model
+selected_model = st.selectbox("Select model:", gemini_models)
+
+
+# Create LiteLLM instance
+llm = LiteLLM(model=selected_model)
+
+
+pai.config.set({
+    "llm": llm
+})
 with st.form(key="prompt_form"):
     prompt = st.text_input("Enter your prompt:")
     submitted = st.form_submit_button("Submit")
